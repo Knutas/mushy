@@ -1,0 +1,41 @@
+@media (prefers-color-scheme: dark) {
+    html {
+        color-scheme: dark;
+    }
+
+    body,
+    input {
+        color: #eee;
+    }
+}
+
+body {
+    margin: 0 auto;
+    width: fit-content;
+    font-family: Verdana, Geneva, Tahoma, sans-serif;
+}
+
+summary {
+    cursor: pointer;
+
+    >h2 {
+        display: inline-block;
+        vertical-align: middle;
+    }
+}
+
+h2 {
+    margin: 0;
+}
+
+hr {
+    margin: 1em 0
+}
+
+body>details> :nth-child(2) {
+    margin-top: 1em;
+}
+
+mushy-additional-ap {
+    display: block;
+}
