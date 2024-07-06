@@ -1,0 +1,13 @@
+{
+  "name": "mushy",
+  "version": "1.0.0",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc --watch"
+  },
+  "author": "Stefan Knutas",
+  "license": "AGPL-3.0-only",
+  "devDependencies": {
+    "typescript": "^5.8.3"
+  }
+}
