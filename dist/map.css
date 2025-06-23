@@ -1,0 +1,177 @@
+html,
+body {
+    height: 100%;
+    margin: 0;
+}
+
+#map {
+    height: 100%;
+}
+
+.default-cursor {
+    cursor: default;
+}
+
+.button-control {
+    height: 32px;
+    width: 32px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 5px;
+    background-color: white;
+    border-radius: 3px;
+
+    &:hover {
+        background-color: #f0f0f0;
+    }
+
+    &.active {
+        background-color: #ddd;
+    }
+}
+
+.search-control {
+    display: flex;
+    gap: 0.2rem;
+    background-color: white;
+
+    .button-control {
+        height: 28px;
+        width: 28px;
+        border: none;
+        border-radius: 2px;
+    }
+
+    input {
+        border: none;
+        border-radius: 2px;
+    }
+
+    &.open>:first-child {
+        display: none;
+    }
+
+    &:not(.open)>*:not(:first-child) {
+        display: none;
+    }
+}
+
+.marker-type-options {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0;
+    padding: 0;
+    border: none;
+
+    label {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        box-sizing: border-box;
+        width: 35px;
+        height: 35px;
+        font-size: 24px;
+        line-height: 1;
+
+        &:has(input:checked) {
+            background-color: darkgray;
+        }
+
+        &:hover {
+            background-color: #f0f0f0;
+        }
+    }
+
+    input {
+        display: none;
+    }
+}
+
+.create-popup {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.portal-manager:modal {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.action-container {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 10px;
+}
+
+.search-result:modal {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-width: 90vw;
+    max-height: 90vh;
+}
+
+.search-result-list>div {
+    display: flex;
+    gap: 10px;
+    padding-block: 5px;
+    border-bottom: 1px solid #ccc;
+    cursor: pointer;
+
+    &:last-child {
+        border-bottom: none;
+    }
+
+    &:hover {
+        background-color: #f0f0f0;
+    }
+}
+
+.search-result-image {
+    flex-shrink: 0;
+    width: 50px;
+    height: 50px;
+    object-fit: cover;
+    cursor: zoom-in;
+}
+
+.search-result-symbol {
+    flex-shrink: 0;
+    width: 50px;
+    height: 50px;
+    font-size: 30px;
+    text-align: center;
+}
+
+.search-result-text {
+    header {
+        font-size: large;
+        font-weight: bold;
+    }
+}
+
+.marker-image {
+    width: 180px;
+    cursor: zoom-in;
+    display: block;
+}
+
+.marker-name {
+    display: block;
+    padding: 5px 0;
+}
+
+.image-dialog:modal {
+    display: flex;
+    padding: 0;
+    max-width: 90vw;
+    max-height: 90vh;
+    overflow: hidden;
+    cursor: pointer;
+}
