@@ -6,7 +6,8 @@ import { markCurrentLocation } from "./currentLocationMarker.js";
 import { PortalManagerControl } from "./PortalManagerControl.js";
 import { RadiusControl } from "./RadiusControl.js";
 import { SearchMarkersControl } from "./SearchMarkersControl.js";
-import { defaultZoom, layers, portals } from "./data.js";
+import { defaultZoom, layerControl, layers, portals } from "./data.js";
+import { ClusterControl } from "./ClusterControl.js";
 
 async function init() {
   const osmHotBase = L.tileLayer("https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png", {
@@ -87,13 +88,20 @@ async function init() {
     "Stadia Alidade Satellite": stadia_AlidadeSatellite,
   };
 
-  L.control.layers(baseMaps, layers).addTo(map);
+  Object.entries(baseMaps).forEach(([name, layer]) => {
+    layerControl.addBaseLayer(layer, name);
+  });
+  Object.entries(layers).forEach(([type, layer]) => {
+    layerControl.addOverlay(layer, type);
+  });
+  map.addControl(layerControl);
 
   map.addControl(new SearchMarkersControl({ position: "topleft" }));
   map.addControl(new PortalManagerControl({ position: "topleft" }));
   map.addControl(new RadiusControl({ position: "topleft" }));
   map.addControl(new CurrentLocationControl({ position: "topleft" }));
   map.addControl(new AddMarkerControl({ position: "topleft" }));
+  map.addControl(new ClusterControl());
 }
 
 init();
