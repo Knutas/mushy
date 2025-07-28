@@ -86,8 +86,20 @@ export const SearchMarkersControl = L.Control.extend({
       });
 
       portalTypes.forEach((type) => {
-        layers[type].addLayers(add[type]);
-        layers[type].removeLayers(remove[type]);
+        if ("addLayers" in layers[type]) {
+          layers[type].addLayers(add[type]);
+        } else {
+          add[type].forEach((marker) => {
+            layers[type].addLayer(marker);
+          });
+        }
+        if ("removeLayers" in layers[type]) {
+          layers[type].removeLayers(remove[type]);
+        } else {
+          remove[type].forEach((marker) => {
+            layers[type].removeLayer(marker);
+          });
+        }
       });
     }
 
