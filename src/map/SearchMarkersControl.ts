@@ -1,5 +1,8 @@
 import { layers, markers, portals } from "./data.js";
-import { createMarker, displayImage, getTypeOptions, icon } from "./utils.js";
+import { createMarker } from "./marker.js";
+import { getTypeOptions } from "./getTypeOptions.js";
+import { displayImage } from "./displayImage.js";
+import { icon } from "./icon.js";
 import { Portal, portalMeta, PortalType, portalTypes } from "./portals.js";
 import { savePortals } from "./portals.js";
 
@@ -9,163 +12,173 @@ declare global {
   }
 }
 
-export const SearchMarkersControl = L.Control.extend({
-  onAdd(map: L.Map) {
-    const container = L.DomUtil.create("div", "leaflet-bar search-control");
-    L.DomEvent.disableClickPropagation(container);
+export class SearchMarkersControl extends L.Control {
+  #container: HTMLDivElement;
+  #input: HTMLInputElement;
+  #map: L.Map | null = null;
+  #filtered = false;
+  #searchModal: ReturnType<typeof searchModal> | null = null;
 
-    let filtered = false;
+  constructor(options: L.ControlOptions = { position: "topleft" }) {
+    super(options);
+    this.#container = L.DomUtil.create("div", "leaflet-bar search-control");
+    L.DomEvent.disableClickPropagation(this.#container);
 
-    const button = L.DomUtil.create("button", "button-control", container);
+    const button = L.DomUtil.create("button", "button-control", this.#container);
     button.innerHTML = "🔍";
     button.title = "Search (ctrl+f)";
 
-    const input = L.DomUtil.create("input", undefined, container);
-    input.placeholder = "Filter by name…";
+    this.#input = L.DomUtil.create("input", undefined, this.#container);
+    this.#input.placeholder = "Filter by name…";
 
-    const searchButton = L.DomUtil.create("button", "button-control", container);
+    const searchButton = L.DomUtil.create("button", "button-control", this.#container);
     searchButton.innerHTML = "🌐";
     searchButton.title = "Search globally (searches name and full address)";
 
-    const clearButton = L.DomUtil.create("button", "button-control", container);
+    const clearButton = L.DomUtil.create("button", "button-control", this.#container);
     clearButton.innerHTML = "✖";
     clearButton.title = "Clear filter";
 
-    function activate() {
-      container.classList.add("open");
-      input.focus();
-    }
-
-    function reset() {
-      container.classList.remove("open");
-      input.value = "";
-
-      markers.forEach((marker, guid) => {
-        const portal = portals.get(guid);
-        if (portal) {
-          layers[portal.type].addLayer(marker);
-        }
-      });
-    }
-
-    function filterVisible() {
-      const value = input.value.trim();
-
-      if (value === "" && filtered !== true) {
-        return;
-      }
-
-      filtered = value !== "";
-
-      const query = new RegExp(RegExp.escape(value), "i");
-
-      const add: Record<PortalType, L.Marker[]> = {
-        Flower: [],
-        Mushroom: [],
-        Unavailable: [],
-        Unknown: [],
-      };
-      const remove: Record<PortalType, L.Marker[]> = {
-        Flower: [],
-        Mushroom: [],
-        Unavailable: [],
-        Unknown: [],
-      };
-
-      markers.forEach((marker, guid) => {
-        const portal = portals.get(guid);
-        if (!portal) {
-          return;
-        }
-
-        if (query.test(portal.name)) {
-          add[portal.type].push(marker);
-        } else {
-          remove[portal.type].push(marker);
-        }
-      });
-
-      portalTypes.forEach((type) => {
-        if ("addLayers" in layers[type]) {
-          layers[type].addLayers(add[type]);
-        } else {
-          add[type].forEach((marker) => {
-            layers[type].addLayer(marker);
-          });
-        }
-        if ("removeLayers" in layers[type]) {
-          layers[type].removeLayers(remove[type]);
-        } else {
-          remove[type].forEach((marker) => {
-            layers[type].removeLayer(marker);
-          });
-        }
-      });
-    }
-
-    function focusVisible() {
-      const bounds = Object.values(layers)
-        .filter((l) => map.hasLayer(l) && l.getLayers().length !== 0)
-        .reduce((sum, layerGroup) => sum.extend(layerGroup.getBounds()), L.latLngBounds([]));
-
-      if (bounds.isValid()) {
-        map.fitBounds(bounds);
-
-        const hits = Object.values(layers).flatMap((layer) => layer.getLayers());
-        if (hits.length === 1) {
-          hits[0]!.openPopup();
-        }
-      }
-    }
-
-    button.addEventListener("click", activate);
+    button.addEventListener("click", () => this.#activate());
 
     document.addEventListener("keydown", (e) => {
       if (e.key === "f" && (e.ctrlKey || e.metaKey)) {
         e.preventDefault();
-        activate();
-        input.select();
+        this.#activate();
+        this.#input.select();
       }
     });
 
-    input.addEventListener("keydown", (e) => {
+    this.#input.addEventListener("keydown", (e) => {
       if (e.key === "Escape") {
-        reset();
+        this.#reset();
       }
     });
 
-    input.addEventListener("input", filterVisible);
+    this.#input.addEventListener("input", () => this.#filterVisible());
 
-    input.addEventListener("keypress", (e) => {
-      if (e.key !== "Enter" || input.value.trim() === "") {
+    this.#input.addEventListener("keypress", (e) => {
+      if (e.key !== "Enter" || this.#input.value.trim() === "") {
         return;
       }
 
-      focusVisible();
+      this.#focusVisible();
     });
 
-    input.addEventListener("blur", () => {
-      if (input.value.trim() === "") {
-        reset();
+    this.#input.addEventListener("blur", () => {
+      if (this.#input.value.trim() === "") {
+        this.#reset();
       }
     });
 
-    clearButton.addEventListener("click", () => {
-      reset();
-    });
+    clearButton.addEventListener("click", () => this.#reset());
 
-    document.addEventListener("mm:portal-added", filterVisible);
-
-    const search = searchModal(map);
+    document.addEventListener("mm:portal-added", () => this.#filterVisible());
 
     searchButton.addEventListener("click", async () => {
-      const query = input.value.trim();
-      search.globalSearch(query);
+      const query = this.#input.value.trim();
+      this.#searchModal?.globalSearch(query);
+    });
+  }
+
+  override onAdd(map: L.Map) {
+    this.#map = map;
+    this.#searchModal = searchModal(this.#map);
+    return this.#container;
+  }
+
+  #activate() {
+    this.#container.classList.add("open");
+    this.#input.focus();
+  }
+
+  #reset() {
+    this.#container.classList.remove("open");
+    this.#input.value = "";
+
+    markers.forEach((marker, guid) => {
+      const portal = portals.get(guid);
+      if (portal) {
+        layers[portal.type].addLayer(marker);
+      }
+    });
+  }
+
+  #filterVisible() {
+    const value = this.#input.value.trim();
+
+    if (value === "" && this.#filtered !== true) {
+      return;
+    }
+
+    this.#filtered = value !== "";
+
+    const query = new RegExp(RegExp.escape(value), "i");
+
+    const add: Record<PortalType, L.Marker[]> = {
+      Flower: [],
+      Mushroom: [],
+      Unavailable: [],
+      Unknown: [],
+    };
+    const remove: Record<PortalType, L.Marker[]> = {
+      Flower: [],
+      Mushroom: [],
+      Unavailable: [],
+      Unknown: [],
+    };
+
+    markers.forEach((marker, guid) => {
+      const portal = portals.get(guid);
+      if (!portal) {
+        return;
+      }
+
+      if (query.test(portal.name)) {
+        add[portal.type].push(marker);
+      } else {
+        remove[portal.type].push(marker);
+      }
     });
 
-    return container;
-  },
-});
+    portalTypes.forEach((type) => {
+      if ("addLayers" in layers[type]) {
+        layers[type].addLayers(add[type]);
+      } else {
+        add[type].forEach((marker) => {
+          layers[type].addLayer(marker);
+        });
+      }
+      if ("removeLayers" in layers[type]) {
+        layers[type].removeLayers(remove[type]);
+      } else {
+        remove[type].forEach((marker) => {
+          layers[type].removeLayer(marker);
+        });
+      }
+    });
+  }
+
+  #focusVisible() {
+    const map = this.#map;
+    if (!map) {
+      return;
+    }
+
+    const bounds = Object.values(layers)
+      .filter((l) => map.hasLayer(l) && l.getLayers().length !== 0)
+      .reduce((sum, layerGroup) => sum.extend(layerGroup.getBounds()), L.latLngBounds([]));
+
+    if (bounds.isValid()) {
+      map.fitBounds(bounds);
+
+      const hits = Object.values(layers).flatMap((layer) => layer.getLayers());
+      if (hits.length === 1) {
+        hits[0]!.openPopup();
+      }
+    }
+  }
+}
 
 function searchModal(map: L.Map) {
   type SearchResult = {

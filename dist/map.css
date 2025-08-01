@@ -30,6 +30,18 @@ body {
     }
 }
 
+.mode-control {
+    display: flex;
+    background-color: white;
+
+    .button-control {
+        height: 28px;
+        width: 28px;
+        border: none;
+        border-radius: 2px;
+    }
+}
+
 .search-control {
     display: flex;
     gap: 0.2rem;
@@ -59,7 +71,10 @@ body {
 .marker-type-options {
     display: flex;
     align-items: center;
+    flex-wrap: wrap;
     gap: 10px;
+    min-width: 180px;
+    max-width: 215px;
     margin: 0;
     padding: 0;
     border: none;
@@ -97,7 +112,8 @@ body {
     gap: 10px;
 }
 
-.portal-manager:modal {
+.vertical:modal,
+.vertical:popover-open {
     display: flex;
     flex-direction: column;
     gap: 10px;
@@ -165,6 +181,15 @@ body {
 .marker-name {
     display: block;
     padding: 5px 0;
+}
+
+.cook-list {
+    padding: 0;
+    margin-top: 0;
+}
+
+.cook-note {
+    cursor: help;
 }
 
 .image-dialog:modal {

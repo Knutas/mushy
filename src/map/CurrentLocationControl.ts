@@ -1,68 +1,134 @@
 import { defaultZoom } from "./data.js";
-import { getCurrentLocation } from "./utils.js";
-import { markCurrentLocation } from "./currentLocationMarker.js";
 
-export const CurrentLocationControl = L.Control.extend({
-  onAdd(map: L.Map) {
-    const button = L.DomUtil.create("button", "leaflet-bar button-control");
-    button.innerHTML = "💠";
-    button.title = "Center on current location";
-    let active = false;
-    let watchId = -1;
+export class CurrentLocationControl extends L.Control {
+  #button: HTMLButtonElement;
+  #map: L.Map | null = null;
+  #active: boolean = false;
+  #watchId: number = -1;
+  #currentLocationMarker: L.CircleMarker | undefined;
 
-    L.DomEvent.disableClickPropagation(button);
+  constructor(options: L.ControlOptions = { position: "topleft" }) {
+    super(options);
+    this.#button = L.DomUtil.create("button", "leaflet-bar button-control");
+    this.#button.innerHTML = "💠";
+    this.#button.title = "Center on current location";
 
-    button.addEventListener("click", async () => {
-      if (active) {
-        stopFollowing();
-        return;
-      }
+    L.DomEvent.disableClickPropagation(this.#button);
 
-      active = true;
-      button.classList.add("active");
+    this.#button.addEventListener("click", () => this.#toggle());
+  }
 
-      const currentLocation = await getCurrentLocation();
-      if (!currentLocation) {
-        active = false;
-        button.classList.remove("active");
-        return;
-      }
+  override onAdd(map: L.Map) {
+    this.#map = map;
+    map.on("dragstart", this.#stopFollowing, this);
 
-      markCurrentLocation(map, currentLocation);
-      startFollowing();
+    return this.#button;
+  }
 
-      if (map.distance(map.getCenter(), currentLocation) < 100) {
-        map.setZoom(defaultZoom);
-      } else {
-        map.setView([currentLocation.lat, currentLocation.lng]);
+  override onRemove() {
+    this.#map?.off("dragstart", this.#stopFollowing, this);
+  }
 
-        if (map.getZoom() < defaultZoom) {
-          map.setZoom(defaultZoom);
-        }
-      }
-    });
-
-    function startFollowing() {
-      watchId = navigator.geolocation.watchPosition((position) => {
+  async getCurrentLocation(): Promise<L.LatLngLiteral | null> {
+    return new Promise<L.LatLngLiteral | null>((resolve) => {
+      navigator.geolocation.getCurrentPosition((position) => {
         const { latitude: lat, longitude: lng } = position.coords;
-        markCurrentLocation(map, { lat, lng });
-        map.setView({ lat, lng });
+
+        resolve({ lat, lng });
+      }, async () => {
+        try {
+          const geoIp = await fetch("https://free.freeipapi.com/api/json");
+          const { latitude: lat, longitude: lng } = await geoIp.json();
+
+          resolve({ lat, lng });
+        } catch {
+          resolve(null);
+        }
       });
+    });
+  }
+
+  markCurrentLocation(location: L.LatLngLiteral) {
+    const map = this.#map;
+    if (!map) {
+      return;
     }
 
-    function stopFollowing() {
-      if (!active) {
-        return;
+    if (this.#currentLocationMarker === undefined) {
+      map.createPane("currentLocation").style.zIndex = "620";
+
+      this.#currentLocationMarker = L.circleMarker(location, {
+        radius: 8,
+        color: "white",
+        fillColor: "dodgerblue",
+        fillOpacity: 1,
+        weight: 2,
+        interactive: true,
+        bubblingMouseEvents: false,
+        pane: "currentLocation",
+      }).addTo(map);
+
+      this.#currentLocationMarker.on("click", () => {
+        this.#currentLocationMarker?.getElement()?.dispatchEvent(new CustomEvent("mm:current-location-press", { bubbles: true, detail: { location: this.#currentLocationMarker.getLatLng() } }));
+      });
+    } else {
+      this.#currentLocationMarker.setLatLng(location);
+    }
+
+    this.#currentLocationMarker.getElement()?.dispatchEvent(new CustomEvent("mm:current-location-update", { bubbles: true, detail: { location } }));
+  }
+
+  async #toggle() {
+    const map = this.#map;
+    if (!map) {
+      return;
+    }
+
+    if (this.#active) {
+      this.#stopFollowing();
+      return;
+    }
+
+    this.#active = true;
+    this.#button.classList.add("active");
+
+    const currentLocation = await this.getCurrentLocation();
+    if (!currentLocation) {
+      this.#active = false;
+      this.#button.classList.remove("active");
+      return;
+    }
+
+    this.markCurrentLocation(currentLocation);
+    this.#startFollowing();
+
+    if (map.distance(map.getCenter(), currentLocation) < 100) {
+      map.setZoom(defaultZoom);
+    } else {
+      map.setView([currentLocation.lat, currentLocation.lng]);
+
+      if (map.getZoom() < defaultZoom) {
+        map.setZoom(defaultZoom);
       }
+    }
+  }
 
-      active = false;
-      navigator.geolocation.clearWatch(watchId);
-      watchId = -1;
-      button.classList.remove("active");
+  #startFollowing() {
+    this.#watchId = navigator.geolocation.watchPosition((position) => {
+      const { latitude: lat, longitude: lng } = position.coords;
+      this.markCurrentLocation({ lat, lng });
+      this.#map?.setView({ lat, lng });
+    });
+  }
+
+  #stopFollowing() {
+    if (!this.#active) {
+      return;
     }
 
-    map.on("dragstart", () => stopFollowing());
-
-    return button;
-  },
-});
+    this.#active = false;
+    navigator.geolocation.clearWatch(this.#watchId);
+    this.#watchId = -1;
+    this.#button.classList.remove("active");
+  }
+}

@@ -1,4 +1,4 @@
-import { layerControl, layers } from "./data.js";
+import { clusterOptions, layerControl, layers } from "./data.js";
 import { PortalType } from "./portals.js";
 
 export class ClusterControl extends L.Control {
@@ -35,7 +35,7 @@ export class ClusterControl extends L.Control {
 
       let newLayer: L.MarkerClusterGroup | L.FeatureGroup;
       if (this.#useClustering) {
-        newLayer = L.markerClusterGroup({ disableClusteringAtZoom: 17, maxClusterRadius: 50 });
+        newLayer = L.markerClusterGroup(clusterOptions);
         (newLayer as L.MarkerClusterGroup).addLayers(items);
       } else {
         newLayer = L.featureGroup();

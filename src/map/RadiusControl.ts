@@ -1,181 +1,206 @@
 import { portals } from "./data.js";
 
-export const RadiusControl = L.Control.extend({
-  onAdd(map: L.Map) {
-    const level = 14;
+export class RadiusControl extends L.Control {
+  static #level = 14;
+  #button: HTMLButtonElement;
+  #map: L.Map | null = null;
+  #active = false;
+  #circle: L.Circle | null = null;
+  #circleCenter: L.CircleMarker | null = null;
+  #s2Layer = L.layerGroup();
+  #following = false;
+  #eventHandlers: Map<string, (e: any) => void> = new Map();
 
-    const button = L.DomUtil.create("button", "leaflet-bar button-control");
-    button.innerHTML = "⭕";
-    button.title = `500 m radius circle with level ${level} S2 cells`;
+  constructor(options: L.ControlOptions = { position: "topleft" }) {
+    super(options);
 
-    L.DomEvent.disableClickPropagation(button);
+    this.#button = L.DomUtil.create("button", "leaflet-bar button-control");
+    this.#button.innerHTML = "⭕";
+    this.#button.title = `500 m radius circle with level ${RadiusControl.#level} S2 cells`;
 
-    let active = false;
-    let circle: L.Circle | null = null;
-    let circleCenter: L.CircleMarker | null = null;
-    let s2Layer = L.layerGroup();
-    let following = false;
+    L.DomEvent.disableClickPropagation(this.#button);
 
-    function escListener(e: KeyboardEvent) {
-      if (e.key === "Escape") {
-        deactivate();
-      }
-    }
-
-    function markerOpened(e: CustomEventInit<{ guid: string }>) {
-      const guid = e.detail?.guid;
-      if (!guid) {
-        return;
-      }
-
-      const portal = portals.get(guid);
-      if (!portal) {
-        return;
-      }
-
-      following = false;
-
-      const { lat, lng } = portal;
-      setLocation({ lat, lng });
-    }
-
-    function locationPressHandler(e: CustomEventInit<{ location: L.LatLngLiteral }>) {
-      if (following) {
-        return;
-      }
-
-      following = true;
-
-      locationUpdateHandler(e);
-      document.addEventListener("mm:current-location-update", locationUpdateHandler);
-    }
-
-    function locationUpdateHandler(e: CustomEventInit<{ location: L.LatLngLiteral }>) {
-      if (following && e.detail?.location) {
-        setLocation(e.detail.location);
-      }
-    }
-
-    function activate() {
-      active = true;
-      button.classList.add("active");
-      map.getContainer().classList.add("default-cursor");
-
-      document.addEventListener("keydown", escListener);
-      document.addEventListener("mm:marker-open", markerOpened);
-      document.addEventListener("mm:current-location-press", locationPressHandler);
-
-      if (!map.hasLayer(s2Layer)) {
-        s2Layer.addTo(map);
-      }
-    }
-
-    function deactivate() {
-      active = false;
-      button.classList.remove("active");
-      map.getContainer().classList.remove("default-cursor");
-
-      document.removeEventListener("keydown", escListener);
-      document.removeEventListener("mm:marker-open", markerOpened);
-      document.removeEventListener("mm:current-location-press", locationPressHandler);
-      document.removeEventListener("mm:current-location-update", locationUpdateHandler);
-
-      if (circle) {
-        circle.remove();
-        circleCenter?.remove();
-        circle = null;
-        circleCenter = null;
-      }
-
-      if (map.hasLayer(s2Layer)) {
-        s2Layer.remove();
-        s2Layer.clearLayers();
-      }
-    }
-
-    button.addEventListener("click", () => {
-      if (!active) {
-        activate();
+    this.#button.addEventListener("click", () => {
+      if (!this.#active) {
+        this.#activate();
       } else {
-        deactivate();
+        this.#deactivate();
       }
     });
+  }
 
-    map.on("click", (e) => {
-      if (!active) {
-        return;
+  override onAdd(map: L.Map) {
+    this.#map = map;
+    return this.#button;
+  }
+
+  #activate() {
+    const map = this.#map;
+    if (!map) {
+      return;
+    }
+
+    this.#active = true;
+    this.#button.classList.add("active");
+    map.getContainer().classList.add("default-cursor");
+
+    this.#eventHandlers.set("keydown", this.#escListener.bind(this));
+    this.#eventHandlers.set("mm:marker-open", this.#markerOpened.bind(this));
+    this.#eventHandlers.set("mm:current-location-press", this.#locationPressHandler.bind(this));
+    this.#eventHandlers.forEach((handler, event) => document.addEventListener(event, handler));
+
+    if (!map.hasLayer(this.#s2Layer)) {
+      this.#s2Layer.addTo(map);
+    }
+
+    map.on("click", this.#mapClickHandler, this);
+  }
+
+  #deactivate() {
+    this.#active = false;
+    this.#button.classList.remove("active");
+    this.#map?.getContainer().classList.remove("default-cursor");
+
+    this.#map?.off("click", this.#mapClickHandler, this);
+    this.#eventHandlers.forEach((handler, event) => document.removeEventListener(event, handler));
+    this.#eventHandlers.clear();
+
+    this.#circle?.remove();
+    this.#circleCenter?.remove();
+    this.#circle = null;
+    this.#circleCenter = null;
+
+    this.#s2Layer.remove();
+    this.#s2Layer.clearLayers();
+  }
+
+  #mapClickHandler(e: L.LeafletMouseEvent) {
+    this.#following = false;
+
+    const { lat, lng } = e.latlng;
+    this.#setLocation({ lat, lng });
+  }
+
+  #escListener(e: KeyboardEvent) {
+    if (e.key === "Escape") {
+      this.#deactivate();
+    }
+  }
+
+  #markerOpened(e: CustomEventInit<{ guid: string }>) {
+    const guid = e.detail?.guid;
+    if (!guid) {
+      return;
+    }
+
+    const portal = portals.get(guid);
+    if (!portal) {
+      return;
+    }
+
+    this.#following = false;
+
+    const { lat, lng } = portal;
+    this.#setLocation({ lat, lng });
+  }
+
+  #locationPressHandler(e: CustomEventInit<{ location: L.LatLngLiteral }>) {
+    if (this.#following) {
+      return;
+    }
+
+    this.#following = true;
+
+    this.#locationUpdateHandler(e);
+    const handler = this.#locationUpdateHandler.bind(this);
+    this.#eventHandlers.set("mm:current-location-update", handler);
+    document.addEventListener("mm:current-location-update", handler);
+  }
+
+  #locationUpdateHandler(e: CustomEventInit<{ location: L.LatLngLiteral }>) {
+    if (this.#following && e.detail?.location) {
+      this.#setLocation(e.detail.location);
+    }
+  }
+
+  async #setLocation(latlng: L.LatLngLiteral) {
+    const map = this.#map;
+    if (!map) {
+      return;
+    }
+
+    this.#copyCoordinates(latlng);
+
+    if (this.#circle) {
+      this.#circle.setLatLng(latlng);
+      this.#circleCenter?.setLatLng(latlng);
+    } else {
+      this.#circle = L.circle(latlng, {
+        radius: 500,
+        color: "red",
+        fillColor: "#f03",
+        fillOpacity: 0.1,
+        interactive: false,
+      }).addTo(map);
+      this.#circleCenter = L.circleMarker(latlng, {
+        radius: 3,
+        color: "white",
+        fillColor: "red",
+        fillOpacity: 1,
+        weight: 1,
+        interactive: false,
+      }).addTo(map);
+    }
+
+    this.#drawS2Grid(this.#circle.getLatLng(), this.#circle.getRadius(), this.#circle.getBounds());
+  }
+
+  #drawS2Grid(circleCenter: L.LatLng, radius: number, bounds: L.LatLngBounds) {
+    const map = this.#map;
+    if (!map) {
+      return;
+    }
+
+    this.#s2Layer.clearLayers();
+    const step = calculateStepSize(RadiusControl.#level, circleCenter.lat);
+    const cells = new Map<string, L.LatLngLiteral>();
+
+    const nw = bounds.getNorthWest();
+    const se = bounds.getSouthEast();
+    const startLat = Math.min(nw.lat, se.lat);
+    const endLat = Math.max(nw.lat, se.lat) + step.stepLat;
+    const startLng = Math.min(nw.lng, se.lng);
+    const endLng = Math.max(nw.lng, se.lng);
+
+    for (let lat = startLat; lat <= endLat; lat += step.stepLat) {
+      for (let lng = startLng; lng <= endLng; lng += step.stepLng) {
+        cells.set(S2.latLngToKey(lat, lng, RadiusControl.#level), { lat, lng });
       }
+    }
 
-      following = false;
+    cells.forEach(({ lat, lng }) => {
+      const cell = S2.S2Cell.FromLatLng({ lat, lng }, RadiusControl.#level);
+      const corners = cell.getCornerLatLngs();
 
-      const { lat, lng } = e.latlng;
-      setLocation({ lat, lng });
-    });
-
-    async function setLocation(latlng: L.LatLngLiteral) {
-      void navigator.clipboard.writeText(`${latlng.lat}, ${latlng.lng}`).catch(() => void 0);
-
-      if (circle) {
-        circle.setLatLng(latlng);
-        circleCenter?.setLatLng(latlng);
-      } else {
-        circle = L.circle(latlng, {
-          radius: 500,
-          color: "red",
-          fillColor: "#f03",
-          fillOpacity: 0.1,
-          interactive: false,
-        }).addTo(map);
-        circleCenter = L.circleMarker(latlng, {
-          radius: 3,
-          color: "white",
-          fillColor: "red",
-          fillOpacity: 1,
+      if (corners.some((corner) => map.distance(circleCenter, corner) <= radius)) {
+        L.polygon(corners, {
+          color: "black",
           weight: 1,
+          fill: false,
+          opacity: 0.5,
           interactive: false,
-        }).addTo(map);
+        }).addTo(this.#s2Layer);
       }
+    });
+  }
 
-      drawS2Grid(circle.getLatLng(), circle.getRadius(), circle.getBounds());
-    }
-
-    function drawS2Grid(circleCenter: L.LatLng, radius: number, bounds: L.LatLngBounds) {
-      s2Layer.clearLayers();
-      const step = calculateStepSize(level, circleCenter.lat);
-      const cells = new Map<string, L.LatLngLiteral>();
-
-      const nw = bounds.getNorthWest();
-      const se = bounds.getSouthEast();
-      const startLat = Math.min(nw.lat, se.lat);
-      const endLat = Math.max(nw.lat, se.lat) + step.stepLat;
-      const startLng = Math.min(nw.lng, se.lng);
-      const endLng = Math.max(nw.lng, se.lng);
-
-      for (let lat = startLat; lat <= endLat; lat += step.stepLat) {
-        for (let lng = startLng; lng <= endLng; lng += step.stepLng) {
-          cells.set(S2.latLngToKey(lat, lng, level), { lat, lng });
-        }
-      }
-
-      cells.forEach(({ lat, lng }) => {
-        const cell = S2.S2Cell.FromLatLng({ lat, lng }, level);
-        const corners = cell.getCornerLatLngs();
-
-        if (corners.some((corner) => map.distance(circleCenter, corner) <= radius)) {
-          L.polygon(corners, {
-            color: "black",
-            weight: 1,
-            fill: false,
-            opacity: 0.5,
-            interactive: false,
-          }).addTo(s2Layer);
-        }
-      });
-    }
-
-    return button;
-  },
-});
+  #copyCoordinates(latlng: L.LatLngLiteral) {
+    const { lat, lng } = latlng;
+    void navigator.clipboard.writeText(`${lat.toFixed(6)}, ${lng.toFixed(6)}`).catch((err) => {
+      console.error("Failed to copy coordinates: ", err);
+    });
+  }
+}
 
 function calculateStepSize(level: number, latitude: number): { stepLat: number; stepLng: number } {
   const EarthRadius = 6_371_000;

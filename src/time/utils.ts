@@ -43,9 +43,13 @@ export function getSecondsRemaining(hp: number, ap: number) {
   return secondsRemaining;
 }
 
-export function relativeFromSeconds(secondsRemaining: number) {
+export function relativeFromSeconds(secondsRemaining: number, showMinutes = true) {
   if (secondsRemaining <= 0) {
     return "";
+  }
+
+  if (!showMinutes) {
+    secondsRemaining = Math.max(Math.round(secondsRemaining / 3600), 1) * 3600;
   }
 
   const days = Math.floor(secondsRemaining / (60 * 60 * 24));
@@ -65,7 +69,9 @@ export function relativeFromSeconds(secondsRemaining: number) {
     parts.push(plural("hour", hours));
   }
 
-  parts.push(plural("minute", minutes));
+  if (showMinutes) {
+    parts.push(plural("minute", minutes));
+  }
 
   const relative = parts.join(" ");
 
@@ -121,7 +127,7 @@ const months = [
   "December",
 ];
 
-function formatDateTime(dateTime: Date) {
+export function formatDateTime(dateTime: Date) {
   const day = days[dateTime.getDay()];
   const month = months[dateTime.getMonth()];
   const date = dateTime.getDate();

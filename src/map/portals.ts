@@ -1,5 +1,6 @@
 import { layers, markers, portals } from "./data.js";
-import { createMarker, icon } from "./utils.js";
+import { createMarker } from "./marker.js";
+import { icon } from "./icon.js";
 
 export const portalMeta = {
   Flower: { icon: icon.green, symbol: "🌼" },
@@ -11,6 +12,52 @@ export const portalMeta = {
 export type PortalType = keyof typeof portalMeta;
 export const portalTypes = Object.keys(portalMeta) as PortalType[];
 
+export type Option = {
+  text: string;
+  value: string;
+  symbol: string;
+};
+
+export const cookSizeMeta = {
+  small: { text: "Small", value: "small", symbol: "S" },
+  normal: { text: "Normal", value: "normal", symbol: "N" },
+  large: { text: "Large", value: "large", symbol: "L" },
+  giant: { text: "Giant", value: "giant", symbol: "G" },
+  unknown: { text: "Unknown", value: "unknown", symbol: "?" },
+} satisfies Record<string, Option>;
+
+export type CookSize = keyof typeof cookSizeMeta;
+export const cookSizes = Object.keys(cookSizeMeta) as CookSize[];
+
+export const cookTypeMeta = {
+  red: { text: "Red", value: "red", symbol: "🟥" },
+  yellow: { text: "Yellow", value: "yellow", symbol: "🟨" },
+  blue: { text: "Blue", value: "blue", symbol: "🟦" },
+  purple: { text: "Purple", value: "purple", symbol: "🟪" },
+  white: { text: "White", value: "white", symbol: "⬜️" },
+  pink: { text: "Pink", value: "pink", symbol: "💟" },
+  gray: { text: "Gray", value: "gray", symbol: "⬛" },
+  fire: { text: "Fire", value: "fire", symbol: "🔥" },
+  water: { text: "Water", value: "water", symbol: "💧" },
+  crystal: { text: "Crystal", value: "crystal", symbol: "💎" },
+  electric: { text: "Electric", value: "electric", symbol: "⚡️" },
+  poisonous: { text: "Poisonous", value: "poisonous", symbol: "☠️" },
+  event: { text: "Event", value: "event", symbol: "✨" },
+  unknown: { text: "Unknown", value: "unknown", symbol: "❔" },
+} satisfies Record<string, Option>;
+
+export type CookType = keyof typeof cookTypeMeta;
+export const cookTypes = Object.keys(cookTypeMeta) as CookType[];
+
+export type Cook = {
+  size: CookSize;
+  type: CookType;
+  start: Date;
+  safe: boolean;
+  end?: Date | undefined;
+  note?: string | undefined;
+};
+
 export type Portal = {
   guid: string;
   lat: number;
@@ -18,6 +65,7 @@ export type Portal = {
   name: string;
   type: PortalType;
   image?: string | undefined;
+  cooks?: Cook[] | undefined;
   manual?: boolean;
 };
 
@@ -27,9 +75,10 @@ export function loadPortals() {
     guid: portal.guid,
     lat: portal.lat,
     lng: portal.lng,
-    name: portal.name.toString(),
+    name: portal.name,
     type: portal.type ?? "Unknown",
     image: portal.image,
+    cooks: portal.cooks?.map((c) => ({ ...c, start: new Date(c.start), end: c.end ? new Date(c.end) : undefined })),
     manual: portal.manual ?? (portal.guid.endsWith(".16") ? false : true),
   }]));
 
@@ -74,7 +123,7 @@ function createFromFile(e: ProgressEvent<FileReader>) {
         feature.properties
       ) {
         const { coordinates } = feature.geometry;
-        const { name, type, guid, manual } = feature.properties;
+        const { name, type, guid, cooks, manual } = feature.properties;
 
         const id = guid ?? crypto.randomUUID();
 
@@ -84,6 +133,7 @@ function createFromFile(e: ProgressEvent<FileReader>) {
           lng: coordinates[0],
           name: name ?? id,
           type: type ?? "Unknown",
+          cooks: cooks?.map((c: Cook) => ({ ...c, start: new Date(c.start), end: c.end ? new Date(c.end) : undefined })),
           manual: manual ?? (guid.endsWith(".16") ? false : true),
         };
 
@@ -145,6 +195,7 @@ export function exportPortals(types: PortalType[]) {
             name: portal.name,
             type: portal.type,
             guid: portal.guid,
+            cooks: portal.cooks,
             manual: portal.manual,
           },
         };
@@ -205,3 +256,47 @@ async function fetchPortals(url: string) {
 
   return portals;
 }
+
+export const hp = {
+  small: {
+    red: 87_400,
+    yellow: 84_200,
+    blue: 84_200,
+    purple: 93_900,
+    white: 81_000,
+    pink: 81_000,
+    gray: 90_700,
+  },
+  normal: {
+    red: 670_600,
+    yellow: 645_800,
+    blue: 645_800,
+    purple: 720_300,
+    white: 621_000,
+    pink: 621_000,
+    gray: 695_500,
+    fire: 3_850_200,
+    water: 3_816_700,
+    crystal: 3_883_600,
+    electric: 3_816_700,
+    poisonous: 3_783_200,
+    event: 648_000,
+  },
+  large: {
+    red: 2_916_000,
+    yellow: 2_808_000,
+    blue: 2_808_000,
+    purple: 3_132_000,
+    white: 2_700_000,
+    pink: 2_700_000,
+    gray: 3_024_000,
+    fire: 13_662_000,
+    water: 13_543_200,
+    crystal: 13_780_800,
+    electric: 13_543_200,
+    poisonous: 13_424_400,
+  },
+  giant: {
+    event: 2_880_000,
+  },
+};
