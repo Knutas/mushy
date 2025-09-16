@@ -68,7 +68,7 @@ body {
     }
 }
 
-.marker-type-options {
+.options-fieldset {
     display: flex;
     align-items: center;
     flex-wrap: wrap;

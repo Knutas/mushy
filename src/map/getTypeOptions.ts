@@ -1,23 +1,25 @@
-import { portalMeta, PortalType, portalTypes } from "./portals.js";
+import { Option, portalMeta, PortalType } from "./portals.js";
 
-export function getTypeOptions(selectedType: PortalType | undefined, multiSelect = false) {
+export function getOptionControl(options: Option[], name: string, selected?: string, multiSelect = false) {
   const fieldset = document.createElement("fieldset");
-  fieldset.className = "marker-type-options";
+  fieldset.className = "options-fieldset";
 
-  portalTypes.forEach((type) => {
+  options.forEach((option) => {
     const label = L.DomUtil.create("label", undefined, fieldset);
+    label.title = option.text;
 
     const input = L.DomUtil.create("input", undefined, label);
     input.type = multiSelect ? "checkbox" : "radio";
-    input.name = "marker-type";
-    input.value = type;
-    input.checked = type === selectedType;
-    if (type === selectedType) {
-      input.setAttribute("checked", "checked");
-    }
+    input.name = name;
+    input.value = option.value;
+    input.checked = option.value === selected;
 
-    label.appendChild(document.createTextNode(portalMeta[type].symbol));
+    label.append(option.symbol);
   });
 
   return fieldset;
+}
+
+export function getTypeOptionControl(selectedType?: PortalType, multiSelect = false) {
+  return getOptionControl(Object.values(portalMeta), "type", selectedType, multiSelect);
 }

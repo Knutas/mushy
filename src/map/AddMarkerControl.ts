@@ -1,6 +1,6 @@
 import { layers, portals } from "./data.js";
 import { createMarker } from "./marker.js";
-import { getTypeOptions } from "./getTypeOptions.js";
+import { getTypeOptionControl } from "./getTypeOptions.js";
 import { icon } from "./icon.js";
 import { Portal, PortalType } from "./portals.js";
 import { savePortals } from "./portals.js";
@@ -57,7 +57,7 @@ export class AddMarkerControl extends L.Control {
     input.name = "name";
     this.#form.appendChild(input);
 
-    this.#form.appendChild(getTypeOptions("Unknown"));
+    this.#form.appendChild(getTypeOptionControl("unknown"));
 
     const saveButton = document.createElement("button");
     saveButton.innerText = "Save";
@@ -109,7 +109,7 @@ export class AddMarkerControl extends L.Control {
     const guid = crypto.randomUUID();
 
     const data = new FormData(e.target as HTMLFormElement);
-    const type = data.get("marker-type") as PortalType;
+    const type = data.get("type") as PortalType;
     const name = (data.get("name") as string).trim() || guid;
 
     const { lat, lng } = this.#tempMarker.getLatLng();

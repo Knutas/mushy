@@ -1,6 +1,6 @@
 import { PortalType } from "./portals.js";
 import { deletePortals, exportPortals, fetchPortalsInView, importFromFile } from "./portals.js";
-import { getTypeOptions } from "./getTypeOptions.js";
+import { getTypeOptionControl } from "./getTypeOptions.js";
 
 export class PortalManagerControl extends L.Control {
   #button: HTMLButtonElement;
@@ -122,12 +122,12 @@ function portalManager(map: L.Map) {
   function typePickerDialog(actionText: string, callback: (types: PortalType[]) => void) {
     const typeDialog = L.DomUtil.create("dialog", undefined, document.body);
     const form = L.DomUtil.create("form", undefined, typeDialog);
-    form.appendChild(getTypeOptions(undefined, true));
+    form.appendChild(getTypeOptionControl(undefined, true));
 
     const actions = L.DomUtil.create("div", "action-container", typeDialog);
     actions.appendChild(createButton(actionText, () => {
       const data = new FormData(form);
-      const selectedTypes = data.getAll("marker-type") as PortalType[];
+      const selectedTypes = data.getAll("type") as PortalType[];
       callback(selectedTypes);
       typeDialog.close();
     }));

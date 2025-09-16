@@ -1,6 +1,7 @@
 import { addMarkerControl, allControls, clusterControl, currentLocationControl, modeControl, portalManagerControl, radiusControl, searchMarkersControl } from "./controls.js";
 import { layerControl, layers } from "./data.js";
-import { portalTypes } from "./portals.js";
+import { portalMeta, portalTypes } from "./portals.js";
+import { getEntries } from "./utils.js";
 
 export type Mode = "survey" | "cook";
 
@@ -71,9 +72,9 @@ export class ModeControl extends L.Control {
       clusterControl,
     );
 
-    Object.entries(layers).forEach(([type, layer]) => {
+    getEntries(layers).forEach(([type, layer]) => {
       this.#map?.addLayer(layer);
-      layerControl.addOverlay(layer, type);
+      layerControl.addOverlay(layer, portalMeta[type].text);
     });
     clusterControl.toggle(true);
   }
@@ -92,7 +93,7 @@ export class ModeControl extends L.Control {
     portalTypes.forEach((type) => {
       layerControl.removeLayer(layers[type]);
 
-      if (type !== "Mushroom") {
+      if (type !== "mushroom") {
         this.#map?.removeLayer(layers[type]);
       }
     });

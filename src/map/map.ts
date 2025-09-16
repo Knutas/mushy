@@ -2,6 +2,7 @@ import { createMarker } from "./marker.js";
 import { portalTypes } from "./portals.js";
 import { clusterOptions, defaultZoom, layerControl, layers, portals } from "./data.js";
 import { currentLocationControl, modeControl } from "./controls.js";
+import { getEntries } from "./utils.js";
 
 async function init() {
   const baseLayers = getBaseLayers();
@@ -16,7 +17,7 @@ async function init() {
   };
   const map = L.map("map", options);
 
-  Object.entries(baseLayers).forEach(([name, layer]) => {
+  getEntries(baseLayers).forEach(([name, layer]) => {
     layerControl.addBaseLayer(layer, name);
   });
 

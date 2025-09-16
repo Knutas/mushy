@@ -1,5 +1,6 @@
 import { clusterOptions, layerControl, layers } from "./data.js";
-import { PortalType } from "./portals.js";
+import { portalMeta } from "./portals.js";
+import { getEntries } from "./utils.js";
 
 export class ClusterControl extends L.Control {
   #button: HTMLButtonElement;
@@ -29,7 +30,7 @@ export class ClusterControl extends L.Control {
     this.#useClustering = useClustering;
     this.#button.classList.toggle("active", this.#useClustering);
 
-    Object.entries(layers).forEach(([type, layer]) => {
+    getEntries(layers).forEach(([type, layer]) => {
       const items: L.Layer[] = [];
       layer.eachLayer((l: L.Layer) => items.push(l));
 
@@ -42,9 +43,9 @@ export class ClusterControl extends L.Control {
         items.forEach((l) => newLayer.addLayer(l));
       }
 
-      layers[type as PortalType] = newLayer;
+      layers[type] = newLayer;
       layerControl.removeLayer(layer);
-      layerControl.addOverlay(newLayer, type);
+      layerControl.addOverlay(newLayer, portalMeta[type].text);
       if (map.hasLayer(layer)) {
         map.removeLayer(layer);
         map.addLayer(newLayer);

@@ -2,21 +2,23 @@ import { layers, markers, portals } from "./data.js";
 import { createMarker } from "./marker.js";
 import { icon } from "./icon.js";
 
-export const portalMeta = {
-  Flower: { icon: icon.green, symbol: "🌼" },
-  Mushroom: { icon: icon.red, symbol: "🍄" },
-  Unavailable: { icon: icon.grey, symbol: "✖" },
-  Unknown: { icon: icon.black, symbol: "❔" },
-};
-
-export type PortalType = keyof typeof portalMeta;
-export const portalTypes = Object.keys(portalMeta) as PortalType[];
-
 export type Option = {
   text: string;
   value: string;
   symbol: string;
 };
+
+export type PortalOption = Option & { icon: L.Icon };
+
+export const portalMeta = {
+  flower: { text: "Flower", value: "flower", symbol: "🌼", icon: icon.green },
+  mushroom: { text: "Mushroom", value: "mushroom", symbol: "🍄", icon: icon.red },
+  unavailable: { text: "Unavailable", value: "unavailable", symbol: "✖", icon: icon.grey },
+  unknown: { text: "Unknown", value: "unknown", symbol: "❔", icon: icon.black },
+} satisfies Record<string, PortalOption>;
+
+export type PortalType = keyof typeof portalMeta;
+export const portalTypes = Object.keys(portalMeta) as PortalType[];
 
 export const cookSizeMeta = {
   small: { text: "Small", value: "small", symbol: "S" },
@@ -76,7 +78,7 @@ export function loadPortals() {
     lat: portal.lat,
     lng: portal.lng,
     name: portal.name,
-    type: portal.type ?? "Unknown",
+    type: (portal.type?.toLowerCase() ?? "unknown") as PortalType,
     image: portal.image,
     cooks: portal.cooks?.map((c) => ({ ...c, start: new Date(c.start), end: c.end ? new Date(c.end) : undefined })),
     manual: portal.manual ?? (portal.guid.endsWith(".16") ? false : true),
@@ -97,7 +99,7 @@ export async function fetchPortalsInView(map: L.Map) {
   const url = `https://lanched.ru/PortalGet/getPortals.php?nelat=${ne.lat}&nelng=${ne.lng}&swlat=${sw.lat}&swlng=${sw.lng}`;
   const fetched = await fetchPortals(url);
 
-  const type = "Unknown";
+  const type = "unknown";
   for (const portal of fetched) {
     if (!markers.has(portal.guid)) {
       portals.set(portal.guid, portal);
@@ -132,7 +134,7 @@ function createFromFile(e: ProgressEvent<FileReader>) {
           lat: coordinates[1],
           lng: coordinates[0],
           name: name ?? id,
-          type: type ?? "Unknown",
+          type: type?.toLowerCase() ?? "unknown",
           cooks: cooks?.map((c: Cook) => ({ ...c, start: new Date(c.start), end: c.end ? new Date(c.end) : undefined })),
           manual: manual ?? (guid.endsWith(".16") ? false : true),
         };
@@ -248,7 +250,7 @@ async function fetchPortals(url: string) {
       lat: portal.lat,
       lng: portal.lng,
       name: portal.name.toString(),
-      type: portal.type ?? "Unknown",
+      type: "unknown",
     }));
 
     portals.push(...portalData);

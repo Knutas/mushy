@@ -2,7 +2,7 @@ import { Layer } from "leaflet";
 import { modeControl } from "./controls.js";
 import { layers, markers, portals } from "./data.js";
 import { displayImage } from "./displayImage.js";
-import { getTypeOptions } from "./getTypeOptions.js";
+import { getOptionControl, getTypeOptionControl } from "./getTypeOptions.js";
 import { Cook, CookSize, cookSizeMeta, CookType, cookTypeMeta, cookTypes, hp, Option, Portal, portalMeta, PortalType, savePortals } from "./portals.js";
 import { createNumericInput, formatDateTime, getSecondsRemaining, parseNumber, relativeFromSeconds } from "../time/utils.js";
 
@@ -32,10 +32,10 @@ function surveyPopup(portal: Portal) {
   L.DomUtil.create("b", "marker-name", popupContent).innerHTML = portal.name;
 
   const form = document.createElement("form");
-  form.appendChild(getTypeOptions(portal.type));
+  form.appendChild(getTypeOptionControl(portal.type));
   form.addEventListener("change", () => {
     const data = new FormData(form);
-    const selectedType = data.get("marker-type") as PortalType;
+    const selectedType = data.get("type") as PortalType;
     setMarkerType(portal.guid, selectedType);
   });
 
@@ -109,7 +109,7 @@ function startCookModal(portal: Portal, layer: Layer) {
 
   const form = document.createElement("form");
   const sizeOptions: Option[] = Object.values(cookSizeMeta);
-  form.appendChild(getOptions(sizeOptions, "size"));
+  form.appendChild(getOptionControl(sizeOptions, "size"));
 
   form.addEventListener("change", () => {
     const data = new FormData(form);
@@ -126,7 +126,7 @@ function startCookModal(portal: Portal, layer: Layer) {
       }
 
       typeOptions.push(cookTypeMeta.unknown);
-      form.replaceChild(getOptions(typeOptions, "type"), form.firstChild!);
+      form.replaceChild(getOptionControl(typeOptions, "type"), form.firstChild!);
       return;
     }
 
@@ -422,25 +422,6 @@ function createButton(text: string, onClick: () => void) {
   btn.addEventListener("click", onClick);
 
   return btn;
-}
-
-function getOptions(options: Option[], name: string) {
-  const fieldset = document.createElement("fieldset");
-  fieldset.className = "marker-type-options";
-
-  options.forEach((option) => {
-    const label = L.DomUtil.create("label", undefined, fieldset);
-    label.title = option.text;
-
-    const input = L.DomUtil.create("input", undefined, label);
-    input.type = "radio";
-    input.name = name;
-    input.value = option.value;
-
-    label.appendChild(document.createTextNode(option.symbol));
-  });
-
-  return fieldset;
 }
 
 function addPopupImage(portal: Portal, popupContent: HTMLDivElement) {

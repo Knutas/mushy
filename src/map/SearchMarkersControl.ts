@@ -1,6 +1,6 @@
 import { layers, markers, portals } from "./data.js";
 import { createMarker } from "./marker.js";
-import { getTypeOptions } from "./getTypeOptions.js";
+import { getTypeOptionControl } from "./getTypeOptions.js";
 import { displayImage } from "./displayImage.js";
 import { icon } from "./icon.js";
 import { Portal, portalMeta, PortalType, portalTypes } from "./portals.js";
@@ -116,16 +116,16 @@ export class SearchMarkersControl extends L.Control {
     const query = new RegExp(RegExp.escape(value), "i");
 
     const add: Record<PortalType, L.Marker[]> = {
-      Flower: [],
-      Mushroom: [],
-      Unavailable: [],
-      Unknown: [],
+      flower: [],
+      mushroom: [],
+      unavailable: [],
+      unknown: [],
     };
     const remove: Record<PortalType, L.Marker[]> = {
-      Flower: [],
-      Mushroom: [],
-      Unavailable: [],
-      Unknown: [],
+      flower: [],
+      mushroom: [],
+      unavailable: [],
+      unknown: [],
     };
 
     markers.forEach((marker, guid) => {
@@ -292,7 +292,7 @@ function searchModal(map: L.Map) {
       if (portals.has(result.guid)) {
         const portal = portals.get(result.guid)!;
 
-        if (portal.type !== "Unknown") {
+        if (portal.type !== "unknown") {
           L.DomUtil.create("div", "search-result-symbol", item).innerHTML = portalMeta[portal.type].symbol;
         }
       }
@@ -339,7 +339,7 @@ function searchModal(map: L.Map) {
       lat: result.lat,
       lng: result.lng,
       name: result.name,
-      type: "Unknown",
+      type: "unknown",
       image: result.image,
     };
 
@@ -356,10 +356,10 @@ function searchModal(map: L.Map) {
     L.DomUtil.create("b", "marker-name", popupContent).innerHTML = portal.name;
 
     const form = document.createElement("form");
-    form.appendChild(getTypeOptions(portal.type));
+    form.appendChild(getTypeOptionControl(portal.type));
     form.addEventListener("change", () => {
       const data = new FormData(form);
-      const selectedType = data.get("marker-type") as PortalType;
+      const selectedType = data.get("type") as PortalType;
       portal.type = selectedType;
     });
 
