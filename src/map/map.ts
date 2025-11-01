@@ -74,28 +74,34 @@ function getBaseLayers() {
     attribution: `&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>`,
     maxZoom: 19,
   });
-  const stadia_Outdoors = L.tileLayer("https://tiles.stadiamaps.com/tiles/outdoors/{z}/{x}/{y}{r}.png", {
-    maxZoom: 20,
+  const stadiaOutdoors = L.tileLayer("https://tiles.stadiamaps.com/tiles/outdoors/{z}/{x}/{y}{r}.png", {
     attribution:
       '&copy; <a href="https://www.stadiamaps.com/">Stadia Maps</a> &copy; <a href="https://openmaptiles.org/">OpenMapTiles</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-  });
-  const stadia_AlidadeSmoothDark = L.tileLayer("https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png", {
     maxZoom: 20,
+  });
+  const stadiaAlidadeSmoothDark = L.tileLayer("https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png", {
     attribution:
       '&copy; <a href="https://www.stadiamaps.com/">Stadia Maps</a> &copy; <a href="https://openmaptiles.org/">OpenMapTiles</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-  });
-  const stadia_AlidadeSatellite = L.tileLayer("https://tiles.stadiamaps.com/tiles/alidade_satellite/{z}/{x}/{y}{r}.jpg", {
     maxZoom: 20,
-    attribution:
-      '&copy; CNES, Distribution Airbus DS, © Airbus DS, © PlanetObserver (Contains Copernicus Data) | &copy; <a href="https://www.stadiamaps.com/">Stadia Maps</a> &copy; <a href="https://openmaptiles.org/">OpenMapTiles</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+  });
+  const googleStreets = L.tileLayer("https://{s}.google.com/vt?lyrs=m&x={x}&y={y}&z={z}", {
+    attribution: "&copy; Google",
+    maxZoom: 20,
+    subdomains: ["mt0", "mt1", "mt2", "mt3"],
+  });
+  const googleSatellite = L.tileLayer("https://{s}.google.com/vt?lyrs=y,h&x={x}&y={y}&z={z}", {
+    attribution: "&copy; Google",
+    maxZoom: 20,
+    subdomains: ["mt0", "mt1", "mt2", "mt3"],
   });
 
   return {
     "OpenStreetMap.HOT": osmHotBase,
     "OpenStreetMap": osmBase,
-    "Stadia Outdoors": stadia_Outdoors,
-    "Stadia Alidade Smooth Dark": stadia_AlidadeSmoothDark,
-    "Stadia Alidade Satellite": stadia_AlidadeSatellite,
+    "Stadia Outdoors": stadiaOutdoors,
+    "Stadia Dark": stadiaAlidadeSmoothDark,
+    "Google Streets": googleStreets,
+    "Google Satellite": googleSatellite,
   };
 }
 
