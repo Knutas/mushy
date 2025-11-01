@@ -279,7 +279,7 @@ function confirmFinishCook(cook: Cook | null, dialog: HTMLDialogElement, layer: 
   const endInput = document.createElement("input");
   endInput.type = "datetime-local";
   const now = new Date(Date.now() - (new Date().getTimezoneOffset() * 60000));
-  endInput.valueAsDate = roundToMinute(now);
+  endInput.valueAsNumber = roundToMinute(now).valueOf();
   const endLabel = document.createElement("label");
   endLabel.innerText = "End time: ";
   endLabel.appendChild(endInput);
@@ -346,7 +346,7 @@ function editCook(portal: Portal, cook: Cook, layer: Layer) {
 
   const endInput = document.createElement("input");
   endInput.type = "datetime-local";
-  endInput.valueAsDate = new Date(end.valueOf() - (new Date().getTimezoneOffset() * 60000));
+  endInput.valueAsNumber = new Date(end.valueOf() - (new Date().getTimezoneOffset() * 60000)).valueOf();
   const endLabel = document.createElement("label");
   endLabel.innerText = "End time: ";
   endLabel.appendChild(endInput);
