@@ -52,8 +52,9 @@ function cookPopup(portal: Portal, layer: Layer) {
     const cookList = L.DomUtil.create("ul", "cook-list", popupContent);
     portal.cooks
       .slice()
-      .sort((a, b) => (a.end?.valueOf() ?? Number.MAX_SAFE_INTEGER) - (b.end?.valueOf() ?? Number.MAX_SAFE_INTEGER))
+      .sort((a, b) => (b.end?.valueOf() ?? Number.MAX_SAFE_INTEGER) - (a.end?.valueOf() ?? Number.MAX_SAFE_INTEGER))
       .slice(0, 5)
+      .reverse()
       .forEach((cook) => {
         const item = L.DomUtil.create("li", undefined, cookList);
         const timeNode = (() => {
