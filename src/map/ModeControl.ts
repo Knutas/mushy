@@ -1,5 +1,6 @@
 import { addMarkerControl, allControls, clusterControl, currentLocationControl, modeControl, portalManagerControl, radiusControl, searchMarkersControl } from "./controls.js";
-import { layerControl, layers } from "./data.js";
+import { layerControl, layers, markers, portals } from "./data.js";
+import { getIcon } from "./marker.js";
 import { portalMeta, portalTypes } from "./portals.js";
 import { getEntries } from "./utils.js";
 
@@ -77,6 +78,8 @@ export class ModeControl extends L.Control {
       layerControl.addOverlay(layer, portalMeta[type].text);
     });
     clusterControl.toggle(true);
+
+    this.#updateIcons();
   }
 
   #setCookMode() {
@@ -95,8 +98,12 @@ export class ModeControl extends L.Control {
 
       if (type !== "mushroom") {
         this.#map?.removeLayer(layers[type]);
+      } else {
+        this.#map?.addLayer(layers[type]);
       }
     });
+
+    this.#updateIcons();
   }
 
   #setControls(...controls: L.Control[]) {
@@ -108,5 +115,13 @@ export class ModeControl extends L.Control {
     allControls.forEach((control) => map.removeControl(control));
 
     controls.forEach((control) => map.addControl(control));
+  }
+
+  #updateIcons() {
+    const mushrooms = portals.values().filter((portal) => portal.type === "mushroom");
+    mushrooms.forEach((portal) => {
+      const marker = markers.get(portal.guid);
+      marker?.setIcon(getIcon(portal));
+    });
   }
 }

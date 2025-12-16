@@ -5,9 +5,10 @@ import { displayImage } from "./displayImage.js";
 import { getOptionControl, getTypeOptionControl } from "./getTypeOptions.js";
 import { Cook, CookSize, cookSizeMeta, CookType, cookTypeMeta, cookTypes, hp, Option, Portal, portalMeta, PortalType, savePortals } from "./portals.js";
 import { createNumericInput, formatDateTime, getSecondsRemaining, parseNumber, relativeFromSeconds } from "../time/utils.js";
+import { icon } from "./icon.js";
 
 export function createMarker(portal: Portal) {
-  const marker = L.marker([portal.lat, portal.lng], { icon: portalMeta[portal.type].icon });
+  const marker = L.marker([portal.lat, portal.lng], { icon: getIcon(portal) });
   markers.set(portal.guid, marker);
 
   marker.bindPopup((layer) => {
@@ -22,6 +23,15 @@ export function createMarker(portal: Portal) {
   });
 
   return marker;
+}
+
+export function getIcon(portal: Portal) {
+  switch (modeControl.mode) {
+    case "cook":
+      return isCookable(portal) ? icon.red : icon.black;
+    default:
+      return portalMeta[portal.type].icon;
+  }
 }
 
 function surveyPopup(portal: Portal) {
@@ -89,7 +99,7 @@ function cookPopup(portal: Portal, layer: Layer) {
   }
 
   const action = L.DomUtil.create("button", undefined, popupContent);
-  const cookable = portal.cooks == null || portal.cooks.length === 0 || portal.cooks.every((c) => c.end != null);
+  const cookable = isCookable(portal);
   action.innerText = cookable ? "Start cooking" : "End cooking";
   action.addEventListener("click", () => {
     if (cookable) {
@@ -100,6 +110,10 @@ function cookPopup(portal: Portal, layer: Layer) {
   });
 
   return popupContent;
+}
+
+function isCookable(portal: Portal) {
+  return portal.cooks == null || portal.cooks.length === 0 || portal.cooks.every((c) => c.end != null);
 }
 
 function startCookModal(portal: Portal, layer: Layer) {
@@ -158,6 +172,7 @@ function startCook(portal: Portal, size: CookSize, type: CookType, layer: Layer)
   portal.cooks.push({ start: now, size, type, safe: true });
   savePortals();
   layer.closePopup();
+  markers.get(portal.guid)?.setIcon(getIcon(portal));
 }
 
 function finishCookModal(portal: Portal, layer: Layer) {
@@ -169,7 +184,7 @@ function finishCookModal(portal: Portal, layer: Layer) {
   const dialog = L.DomUtil.create("dialog", "vertical", document.body);
   const endTime = new Date();
 
-  const confirm = (startTime: Date) => confirmFinishCook(cook, dialog, layer, startTime, endTime);
+  const confirm = (startTime: Date) => confirmFinishCook(portal, cook, dialog, layer, startTime, endTime);
 
   dialog.appendChild(createButton("End now", () => confirm(cook.start)));
 
@@ -191,6 +206,7 @@ function finishCookModal(portal: Portal, layer: Layer) {
       portal.cooks = portal.cooks?.filter((c) => c !== cook);
       savePortals();
       layer.closePopup();
+      markers.get(portal.guid)?.setIcon(getIcon(portal));
       dialog.close();
     }),
     createButton("No", () => dialog.close()),
@@ -265,7 +281,7 @@ function startTimeFromHp(cook: Cook, confirm: (startTime: Date) => void, endTime
   currentHpInput.focus();
 }
 
-function confirmFinishCook(cook: Cook | null, dialog: HTMLDialogElement, layer: Layer, startTime: Date, endTime: Date) {
+function confirmFinishCook(portal: Portal, cook: Cook, dialog: HTMLDialogElement, layer: Layer, startTime: Date, endTime: Date) {
   if (cook == null) {
     dialog.close();
     return;
@@ -296,7 +312,7 @@ function confirmFinishCook(cook: Cook | null, dialog: HTMLDialogElement, layer: 
     const end = new Date(endInput.value);
     const start = new Date(end.valueOf() - duration);
 
-    finishCook(layer, dialog, cook!, start, end, noteInput.value.trim(), safe);
+    finishCook(layer, dialog, portal, cook!, start, end, noteInput.value.trim(), safe);
   }
 
   actions.appendChild(symbolButton("✔️", "Safe", () => endCook(true)));
@@ -318,13 +334,14 @@ function symbolButton(symbol: string, title: string, onClick: () => void) {
   return button;
 }
 
-function finishCook(layer: Layer, dialog: HTMLDialogElement, cook: Cook, start: Date, end: Date, note: string, safe: boolean) {
+function finishCook(layer: Layer, dialog: HTMLDialogElement, portal: Portal, cook: Cook, start: Date, end: Date, note: string, safe: boolean) {
   cook.start = start;
   cook.end = end;
   cook.note = note.length > 0 ? note : undefined;
   cook.safe = safe;
   savePortals();
   layer.closePopup();
+  markers.get(portal.guid)?.setIcon(getIcon(portal));
   dialog.close();
 }
 
