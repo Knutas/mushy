@@ -40,10 +40,10 @@ function portalManager(map: L.Map) {
 
   function bindKeys() {
     document.addEventListener("keydown", (e) => {
-      if (e.key === "o" && (e.ctrlKey || e.metaKey)) {
+      if (e.key.toLowerCase() === "o" && (e.ctrlKey || e.metaKey)) {
         e.preventDefault();
         showImport();
-      } else if (e.key === "s" && (e.ctrlKey || e.metaKey)) {
+      } else if (e.key.toLowerCase() === "s" && (e.ctrlKey || e.metaKey)) {
         e.preventDefault();
         showExport();
       }

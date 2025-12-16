@@ -42,7 +42,7 @@ export class SearchMarkersControl extends L.Control {
     button.addEventListener("click", () => this.#activate());
 
     document.addEventListener("keydown", (e) => {
-      if (e.key === "f" && (e.ctrlKey || e.metaKey)) {
+      if (e.key.toLowerCase() === "f" && (e.ctrlKey || e.metaKey)) {
         e.preventDefault();
         this.#activate();
         this.#input.select();
