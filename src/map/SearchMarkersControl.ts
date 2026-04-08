@@ -6,12 +6,6 @@ import { icon } from "./icon.js";
 import { Portal, portalMeta, PortalType, portalTypes } from "./portals.js";
 import { savePortals } from "./portals.js";
 
-declare global {
-  interface RegExpConstructor {
-    escape(str: string): string;
-  }
-}
-
 export class SearchMarkersControl extends L.Control {
   #container: HTMLDivElement;
   #input: HTMLInputElement;

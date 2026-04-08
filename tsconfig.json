@@ -1,11 +1,13 @@
 {
   "compilerOptions": {
     "target": "esnext",
-    "module": "esnext",
+    "rootDir": "src",
     "outDir": "dist",
+    "types": [
+      "leaflet",
+      "leaflet-markercluster"
+    ],
     "removeComments": true,
-    "forceConsistentCasingInFileNames": true,
-    "strict": true,
     "exactOptionalPropertyTypes": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
