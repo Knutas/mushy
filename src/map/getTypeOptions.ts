@@ -12,7 +12,7 @@ export function getOptionControl(options: Option[], name: string, selected?: str
     input.type = multiSelect ? "checkbox" : "radio";
     input.name = name;
     input.value = option.value;
-    input.checked = option.value === selected;
+    input.defaultChecked = option.value === selected;
 
     label.append(option.symbol);
   });
